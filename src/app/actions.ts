@@ -284,3 +284,13 @@ export async function editPost(f: FormData) {
   if (error) fail(`/p/${id}`, error.message);
   redirect(`/p/${id}`);
 }
+
+export async function joinWaitlist(f: FormData) {
+  const supabase = await db();
+  const { error } = await supabase.from("waitlist").insert({
+    email: s(f, "email").toLowerCase(),
+    interest: s(f, "interest").slice(0, 300),
+  });
+  if (error && error.code !== "23505") fail("/ai", "Please enter a valid email address.");
+  redirect("/ai?joined=1");
+}
