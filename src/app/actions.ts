@@ -8,15 +8,24 @@ const s = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const fail = (path: string, msg: string): never =>
   redirect(`${path}${path.includes("?") ? "&" : "?"}error=${encodeURIComponent(msg)}`);
 
+const captcha = (f: FormData) => s(f, "cf-turnstile-response") || undefined;
+
 export async function signUp(f: FormData) {
   if (f.get("accept") !== "on") fail("/login", "You must accept the rules and the responsibility statement.");
   const supabase = await db();
-  const { error } = await supabase.auth.signUp({
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const { data, error } = await supabase.auth.signUp({
     email: s(f, "email"),
     password: s(f, "password"),
-    options: { data: { username: s(f, "username") } },
+    options: {
+      data: { username: s(f, "username") },
+      captchaToken: captcha(f),
+      emailRedirectTo: `${site}/auth/callback`,
+    },
   });
   if (error) fail("/login", error.message);
+  // With "Confirm email" enabled there is no session until the link is clicked.
+  if (!data.session) redirect("/login?notice=" + encodeURIComponent("Check your email and click the confirmation link."));
   redirect("/");
 }
 
@@ -25,6 +34,7 @@ export async function signIn(f: FormData) {
   const { error } = await supabase.auth.signInWithPassword({
     email: s(f, "email"),
     password: s(f, "password"),
+    options: { captchaToken: captcha(f) },
   });
   if (error) fail("/login", error.message);
   redirect("/");

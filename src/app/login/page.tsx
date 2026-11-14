@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { signIn, signUp } from "../actions";
+import { Turnstile } from "@/components/Turnstile";
 
-export default async function Login({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const { error } = await searchParams;
+export default async function Login({ searchParams }: { searchParams: Promise<{ error?: string; notice?: string }> }) {
+  const { error, notice } = await searchParams;
   return (
     <>
       {error && <p className="err">{error}</p>}
+      {notice && <p className="ok">{notice}</p>}
       <div className="card">
         <h3>Log in</h3>
         <form action={signIn} className="stack">
           <input name="email" type="email" placeholder="Email" required />
           <input name="password" type="password" placeholder="Password" required />
+          <Turnstile />
           <button>Log in</button>
         </form>
       </div>
@@ -27,6 +30,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
               legally responsible for everything I post.
             </span>
           </label>
+          <Turnstile />
           <button>Sign up</button>
         </form>
       </div>
