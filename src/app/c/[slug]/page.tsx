@@ -2,20 +2,21 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db, currentUser } from "@/lib/supabase";
 import { createPost } from "../../actions";
+import { FeedList, SortTabs, orderFor, type FeedRow } from "@/components/FeedList";
 
 export default async function Community({
   params, searchParams,
-}: { params: Promise<{ slug: string }>; searchParams: Promise<{ error?: string }> }) {
+}: { params: Promise<{ slug: string }>; searchParams: Promise<{ error?: string; sort?: string }> }) {
   const { slug } = await params;
-  const { error } = await searchParams;
+  const { error, sort = "hot" } = await searchParams;
   const supabase = await db();
   const { data: c } = await supabase.from("communities").select("id,title,description").eq("slug", slug).single();
   if (!c) notFound();
   const { data: posts } = await supabase
-    .from("posts")
-    .select("id,title,is_nsfw,created_at,profiles(username)")
-    .eq("community_id", c.id)
-    .order("created_at", { ascending: false })
+    .from("feed")
+    .select("*")
+    .eq("community_slug", slug)
+    .order(orderFor(sort), { ascending: false })
     .limit(50);
   const user = await currentUser();
 
@@ -38,16 +39,8 @@ export default async function Community({
       ) : (
         <p className="mute"><Link href="/login">Giriş yap</Link> ve paylaş.</p>
       )}
-      {(posts ?? []).map((p) => (
-        <div key={p.id} className="card">
-          {p.is_nsfw && <span className="badge">18+</span>}
-          <Link href={`/p/${p.id}`}>{p.title}</Link>
-          <div className="mute">
-            {(p.profiles as unknown as { username: string } | null)?.username} ·{" "}
-            {new Date(p.created_at).toLocaleString("tr-TR")}
-          </div>
-        </div>
-      ))}
+      <SortTabs base={`/c/${slug}`} sort={sort} />
+      <FeedList rows={(posts ?? []) as FeedRow[]} />
     </>
   );
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db, currentUser } from "@/lib/supabase";
-import { createComment, vote } from "../../actions";
+import { createComment, vote, deletePost } from "../../actions";
 
 export default async function Post({
   params, searchParams,
@@ -11,7 +11,7 @@ export default async function Post({
   const supabase = await db();
   const { data: p } = await supabase
     .from("posts")
-    .select("id,title,body,is_nsfw,created_at,communities(slug),profiles(username)")
+    .select("id,title,body,is_nsfw,created_at,author_id,communities(slug),profiles(username)")
     .eq("id", id)
     .single();
   if (!p) notFound();
@@ -31,7 +31,7 @@ export default async function Post({
     <>
       <div className="card">
         <div className="mute">
-          <Link href={`/c/${comm?.slug}`}>c/{comm?.slug}</Link> · {author?.username} ·{" "}
+          <Link href={`/c/${comm?.slug}`}>c/{comm?.slug}</Link> · <Link href={`/u/${author?.username}`}>{author?.username}</Link> ·{" "}
           {new Date(p.created_at).toLocaleString("tr-TR")}
         </div>
         <h2>{p.is_nsfw && <span className="badge">18+</span>}{p.title}</h2>
@@ -43,6 +43,9 @@ export default async function Post({
           <b>{sc?.score ?? 0}</b>
           <form action={vote}><input type="hidden" name="post_id" value={id} /><input type="hidden" name="value" value="-1" /><button className="ghost">▼</button></form>
           <span className="spacer" style={{ flex: 1 }} />
+          {user?.id === p.author_id && (
+            <form action={deletePost}><input type="hidden" name="post_id" value={id} /><button className="ghost">Sil</button></form>
+          )}
           <Link href={`/report?post_id=${id}`} className="mute">Bildir</Link>
         </div>
       </div>

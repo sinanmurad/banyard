@@ -3,6 +3,10 @@
 Banyard'yı kendi sunucunuzda çalıştıran kişi **işletmecidir** ve yasal yükümlülükler ona aittir.
 
 ## Rapor kuyruğu
+Yöneticiler `/admin` sayfasından raporları görür; "İçeriği kaldır" veya "Reddet" butonları vardır.
+Yönetici yapmak için: `update profiles set is_admin = true where username = 'kullanici';`
+
+Aşağıdaki SQL alternatiftir:
 Bildirimler `reports` tablosuna düşer (yalnızca service role / Supabase dashboard okuyabilir).
 
 ```sql

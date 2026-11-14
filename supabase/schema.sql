@@ -109,3 +109,58 @@ create policy "reports insert anyone" on reports for insert with check (true);
 --   update posts set removed = true where id = '...';
 -- komutunu çalıştırır. Rapor kategorisi csam / non_consensual_intimate ise
 -- 48 saat içinde kaldırılmalıdır (bkz. docs/MODERATION.md).
+
+-- ===== v0.2: admin, hız sınırı, sıralama =====
+
+alter table profiles add column if not exists is_admin boolean not null default false;
+
+create or replace function is_admin() returns boolean
+language sql security definer stable set search_path = public as $$
+  select coalesce((select is_admin from profiles where id = auth.uid()), false)
+$$;
+
+-- Yöneticiler kaldırılmış içeriği de görür, içerik ve rapor durumunu günceller.
+create policy "posts admin read" on posts for select using (is_admin());
+create policy "posts admin update" on posts for update using (is_admin());
+create policy "comments admin read" on comments for select using (is_admin());
+create policy "comments admin update" on comments for update using (is_admin());
+create policy "reports admin read" on reports for select using (is_admin());
+create policy "reports admin update" on reports for update using (is_admin());
+
+-- Hız sınırı: spam'i azaltır.
+create or replace function limit_posts() returns trigger language plpgsql as $$
+begin
+  if (select count(*) from posts where author_id = new.author_id
+        and created_at > now() - interval '1 minute') >= 3 then
+    raise exception 'Çok hızlı paylaşıyorsunuz, biraz bekleyin.';
+  end if;
+  return new;
+end $$;
+create trigger posts_rate_limit before insert on posts
+  for each row execute function limit_posts();
+
+create or replace function limit_comments() returns trigger language plpgsql as $$
+begin
+  if (select count(*) from comments where author_id = new.author_id
+        and created_at > now() - interval '1 minute') >= 10 then
+    raise exception 'Çok hızlı yorum yapıyorsunuz, biraz bekleyin.';
+  end if;
+  return new;
+end $$;
+create trigger comments_rate_limit before insert on comments
+  for each row execute function limit_comments();
+
+-- Akış görünümü: skor ve "hot" sıralaması.
+create or replace view feed with (security_invoker = true) as
+select p.id, p.title, p.is_nsfw, p.created_at,
+       c.slug as community_slug, pr.username,
+       coalesce(s.score, 0) as score,
+       (coalesce(s.score, 0) + 1) /
+         power(extract(epoch from now() - p.created_at) / 3600 + 2, 1.5) as hot
+from posts p
+join communities c on c.id = p.community_id
+join profiles pr on pr.id = p.author_id
+left join post_scores s on s.post_id = p.id;
+
+-- İlk yöneticiyi atamak için (kendi kullanıcı adınızla):
+--   update profiles set is_admin = true where username = 'kullanici_adi';

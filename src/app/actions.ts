@@ -119,3 +119,39 @@ export async function submitReport(f: FormData) {
   if (error) fail("/report", error.message);
   redirect("/report?sent=1");
 }
+
+export async function deletePost(f: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  const supabase = await db();
+  await supabase.from("posts").delete().eq("id", s(f, "post_id")).eq("author_id", user.id);
+  redirect("/");
+}
+
+async function requireAdmin() {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  const supabase = await db();
+  const { data } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single();
+  if (!data?.is_admin) redirect("/");
+  return supabase;
+}
+
+// Yönetici: bildirilen içeriği kaldırır ve raporu "işlem yapıldı" yapar.
+export async function removeReported(f: FormData) {
+  const supabase = await requireAdmin();
+  const postId = s(f, "post_id");
+  const commentId = s(f, "comment_id");
+  if (postId) await supabase.from("posts").update({ removed: true }).eq("id", postId);
+  if (commentId) await supabase.from("comments").update({ removed: true }).eq("id", commentId);
+  await supabase.from("reports").update({ status: "actioned" }).eq("id", s(f, "report_id"));
+  revalidatePath("/admin");
+  redirect("/admin");
+}
+
+export async function dismissReport(f: FormData) {
+  const supabase = await requireAdmin();
+  await supabase.from("reports").update({ status: "dismissed" }).eq("id", s(f, "report_id"));
+  revalidatePath("/admin");
+  redirect("/admin");
+}
