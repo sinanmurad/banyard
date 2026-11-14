@@ -1,67 +1,67 @@
 import Link from "next/link";
 
-export const metadata = { title: "Kurallar ve sorumluluk — Banyard" };
+export const metadata = { title: "Rules & responsibility — Banyard" };
 
 export default function Rules() {
   const mail = process.env.NEXT_PUBLIC_LEGAL_EMAIL ?? "legal@example.com";
   return (
     <>
-      <h2>Kurallar ve sorumluluk</h2>
+      <h2>Rules &amp; responsibility</h2>
 
       <div className="card">
-        <h3>Temel ilke</h3>
+        <h3>Core principle</h3>
         <p>
-          Banyard'da yasalar çerçevesinde her konu konuşulabilir: sert görüşler, tartışmalı fikirler,
-          siyaset, eleştiri ve yetişkinlere yönelik (18+) metin içerik serbesttir. Yasaklar yalnızca
-          suç oluşturan veya başkasına doğrudan zarar veren içerikle sınırlıdır.
+          Anything legal can be discussed on Banyard: harsh opinions, controversial ideas, politics,
+          criticism and adult (18+) text content are all allowed. The only restrictions are on content
+          that is a crime or directly harms others.
         </p>
       </div>
 
       <div className="card warn">
-        <h3>Kesinlikle yasak içerik</h3>
+        <h3>Strictly prohibited content</h3>
         <ul>
-          <li>18 yaşından küçüklerin cinsel içerikli her türlü gösterimi veya çocuk istismarı (anında silinir, yetkililere bildirilir).</li>
-          <li>Rızası olmayan kişilerin mahrem görüntüleri, intikam pornosu, yapay zekâ ile üretilmiş sahte mahrem görüntüler (deepfake).</li>
-          <li>Şiddet çağrısı, şiddet tehdidi, terör propagandası, bir kişiyi veya grubu hedef alan şiddete teşvik.</li>
-          <li>Uyuşturucu, silah ve patlayıcı satışı, temini veya üretim talimatı.</li>
-          <li>Dolandırıcılık, kimlik hırsızlığı, çalıntı veri, hesap veya kart satışı.</li>
-          <li>İnsan ticareti, zorla çalıştırma, fuhşa aracılık.</li>
-          <li>Kişisel verilerin (adres, telefon, kimlik) rıza olmadan yayımlanması (doxxing), takip ve tacizin organize edilmesi.</li>
-          <li>Telif hakkı ihlali ve kötü amaçlı yazılım dağıtımı.</li>
-          <li>Yürürlükteki yasalara göre suç oluşturan diğer her içerik.</li>
+          <li>Any sexualized depiction of minors or child abuse material (removed immediately and reported to the authorities).</li>
+          <li>Intimate images of people without their consent, revenge porn, and AI-generated fake intimate images (deepfakes).</li>
+          <li>Calls to violence, threats of violence, terrorist propaganda, and incitement against a person or group.</li>
+          <li>Selling, sourcing or giving production instructions for drugs, weapons and explosives.</li>
+          <li>Fraud, identity theft, stolen data, and the sale of accounts or cards.</li>
+          <li>Human trafficking, forced labor, and facilitation of prostitution.</li>
+          <li>Publishing personal data (address, phone, ID) without consent (doxxing), and organizing stalking or harassment.</li>
+          <li>Copyright infringement and distribution of malware.</li>
+          <li>Any other content that constitutes a crime under applicable law.</li>
         </ul>
       </div>
 
       <div className="card warn">
-        <h3>Sorumluluk beyanı</h3>
+        <h3>Responsibility statement</h3>
         <p>
-          Paylaşılan her içeriğin <b>hukuki ve cezai sorumluluğu yalnızca içeriği paylaşan kullanıcıya
-          aittir</b>. Banyard bir barındırma hizmetidir; içerikleri yayımlanmadan önce incelemez, içeriklerin
-          doğruluğunu, yasallığını veya uygunluğunu garanti etmez. Kullanıcı, kayıt olarak şunları kabul eder:
+          <b>The legal and criminal responsibility for any content lies solely with the user who posts it.</b>{" "}
+          Banyard is a hosting service. It does not review content before publication and does not
+          guarantee its accuracy, legality or suitability. By signing up, users agree that:
         </p>
         <ul>
-          <li>18 yaşından büyük olduğunu.</li>
-          <li>Paylaştığı içeriğin yasal olduğunu ve paylaşma hakkına sahip olduğunu.</li>
-          <li>Suç oluşturan içerik nedeniyle doğacak her türlü talep, dava ve cezadan kendisinin sorumlu olduğunu.</li>
-          <li>Yasa gereği gerektiğinde kimlik ve kayıt bilgilerinin yetkili makamlarla paylaşılabileceğini.</li>
+          <li>They are 18 years of age or older.</li>
+          <li>The content they post is legal and they have the right to share it.</li>
+          <li>They alone are responsible for any claim, lawsuit or penalty arising from unlawful content they post.</li>
+          <li>Their identity and account data may be disclosed to the authorities where the law requires it.</li>
         </ul>
       </div>
 
       <div className="card">
-        <h3>18+ içerik</h3>
+        <h3>18+ content</h3>
         <p>
-          Yetişkin içerik "18+" olarak işaretlenmelidir ve varsayılan olarak gizli gelir. Bu sürümde yalnızca
-          metin ve bağlantı paylaşılır. Gerçek kişileri gösteren görsel/video yükleme, yaş ve kimlik doğrulaması
-          ile rıza belgesi altyapısı kurulana kadar açık değildir.
+          Adult content must be marked &quot;18+&quot; and is hidden by default. In this version only text and
+          links can be shared. Uploading images or video of real people stays disabled until age and
+          identity verification and consent records are in place.
         </p>
       </div>
 
       <div className="card">
-        <h3>Bildirim ve kaldırma</h3>
+        <h3>Reporting and removal</h3>
         <p>
-          Yasa dışı olduğunu düşündüğünüz içeriği <Link href="/report">buradan bildirebilirsiniz</Link>.
-          Çocuk istismarı ve rızasız mahrem görüntü bildirimleri öncelikli işlenir ve geçerli bir talepte
-          en geç 48 saat içinde kaldırılır. Hukuki başvurular: <a href={`mailto:${mail}`}>{mail}</a>
+          You can <Link href="/report">report content here</Link> if you believe it is illegal. Reports of
+          child abuse material and non-consensual intimate imagery are prioritized and, if valid, removed
+          within 48 hours. Legal requests: <a href={`mailto:${mail}`}>{mail}</a>
         </p>
       </div>
     </>

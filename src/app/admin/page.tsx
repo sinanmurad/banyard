@@ -24,30 +24,30 @@ export default async function Admin() {
 
   return (
     <>
-      <h2>Rapor kuyruğu ({reports.length})</h2>
-      <p className="mute">Çocuk istismarı ve rızasız görüntü bildirimleri en üstte; 48 saat içinde kaldırılmalı.</p>
+      <h2>Report queue ({reports.length})</h2>
+      <p className="mute">Child abuse and non-consensual imagery reports are on top; they must be removed within 48 hours.</p>
       {reports.map((r) => (
         <div key={r.id} className={`card ${urgent.includes(r.category) ? "warn" : ""}`}>
-          <b>{r.category}</b> · {new Date(r.created_at).toLocaleString("tr-TR")}
+          <b>{r.category}</b> · {new Date(r.created_at).toLocaleString("en-US")}
           {r.reporter_email && <> · {r.reporter_email}</>}
-          <p>{r.details || "(ayrıntı yok)"}</p>
-          {r.post_id && <Link href={`/p/${r.post_id}`}>Gönderiyi aç</Link>}
-          {r.comment_id && <span className="mute"> yorum: {r.comment_id}</span>}
+          <p>{r.details || "(no details)"}</p>
+          {r.post_id && <Link href={`/p/${r.post_id}`}>Open post</Link>}
+          {r.comment_id && <span className="mute"> comment: {r.comment_id}</span>}
           <div className="row" style={{ marginTop: 8 }}>
             <form action={removeReported}>
               <input type="hidden" name="report_id" value={r.id} />
               <input type="hidden" name="post_id" value={r.post_id ?? ""} />
               <input type="hidden" name="comment_id" value={r.comment_id ?? ""} />
-              <button>İçeriği kaldır</button>
+              <button>Remove content</button>
             </form>
             <form action={dismissReport}>
               <input type="hidden" name="report_id" value={r.id} />
-              <button className="ghost">Reddet</button>
+              <button className="ghost">Dismiss</button>
             </form>
           </div>
         </div>
       ))}
-      {reports.length === 0 && <p className="mute">Açık rapor yok.</p>}
+      {reports.length === 0 && <p className="mute">No open reports.</p>}
     </>
   );
 }

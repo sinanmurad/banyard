@@ -6,29 +6,29 @@ import { signOut } from "./actions";
 
 export const metadata: Metadata = {
   title: "Banyard",
-  description: "Yasalar çerçevesinde her şeyin konuşulabildiği açık kaynak forum.",
+  description: "Open-source forum where anything legal can be discussed.",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
   return (
-    <html lang="tr">
+    <html lang="en">
       <body>
         <header>
           <Link href="/" className="brand">Banyard</Link>
-          <Link href="/c/new">Topluluk aç</Link>
+          <Link href="/c/new">Create community</Link>
           <span className="spacer" />
           {user ? (
-            <form action={signOut}><button className="ghost">Çıkış</button></form>
+            <form action={signOut}><button className="ghost">Log out</button></form>
           ) : (
-            <Link href="/login">Giriş / Kayıt</Link>
+            <Link href="/login">Log in / Sign up</Link>
           )}
         </header>
         <main>{children}</main>
         <footer>
-          <Link href="/rules">Kurallar ve sorumluluk</Link>
-          <Link href="/report">İçerik bildir / takedown</Link>
-          <a href="https://github.com/">Açık kaynak (MIT)</a>
+          <Link href="/rules">Rules &amp; responsibility</Link>
+          <Link href="/report">Report content / takedown</Link>
+          <a href="https://github.com/sinanmurad/banyard">Open source (MIT)</a>
         </footer>
       </body>
     </html>

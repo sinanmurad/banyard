@@ -32,11 +32,11 @@ export default async function Post({
       <div className="card">
         <div className="mute">
           <Link href={`/c/${comm?.slug}`}>c/{comm?.slug}</Link> · <Link href={`/u/${author?.username}`}>{author?.username}</Link> ·{" "}
-          {new Date(p.created_at).toLocaleString("tr-TR")}
+          {new Date(p.created_at).toLocaleString("en-US")}
         </div>
         <h2>{p.is_nsfw && <span className="badge">18+</span>}{p.title}</h2>
         {p.is_nsfw ? (
-          <details><summary>18 yaşından büyüğüm, içeriği göster</summary>{body}</details>
+          <details><summary>I am 18 or older, show content</summary>{body}</details>
         ) : body}
         <div className="row">
           <form action={vote}><input type="hidden" name="post_id" value={id} /><input type="hidden" name="value" value="1" /><button className="ghost">▲</button></form>
@@ -44,9 +44,9 @@ export default async function Post({
           <form action={vote}><input type="hidden" name="post_id" value={id} /><input type="hidden" name="value" value="-1" /><button className="ghost">▼</button></form>
           <span className="spacer" style={{ flex: 1 }} />
           {user?.id === p.author_id && (
-            <form action={deletePost}><input type="hidden" name="post_id" value={id} /><button className="ghost">Sil</button></form>
+            <form action={deletePost}><input type="hidden" name="post_id" value={id} /><button className="ghost">Delete</button></form>
           )}
-          <Link href={`/report?post_id=${id}`} className="mute">Bildir</Link>
+          <Link href={`/report?post_id=${id}`} className="mute">Report</Link>
         </div>
       </div>
 
@@ -54,19 +54,19 @@ export default async function Post({
       {user ? (
         <form action={createComment} className="stack">
           <input type="hidden" name="post_id" value={id} />
-          <textarea name="body" placeholder="Yorum yaz" required />
-          <button>Yorum yap</button>
+          <textarea name="body" placeholder="Write a comment" required />
+          <button>Comment</button>
         </form>
       ) : (
-        <p className="mute"><Link href="/login">Giriş yap</Link> ve yorum yaz.</p>
+        <p className="mute"><Link href="/login">Log in</Link> to comment.</p>
       )}
 
       {(comments ?? []).map((c) => (
         <div key={c.id} className="card">
           <div className="mute">
             {(c.profiles as unknown as { username: string } | null)?.username} ·{" "}
-            {new Date(c.created_at).toLocaleString("tr-TR")} ·{" "}
-            <Link href={`/report?comment_id=${c.id}`}>Bildir</Link>
+            {new Date(c.created_at).toLocaleString("en-US")} ·{" "}
+            <Link href={`/report?comment_id=${c.id}`}>Report</Link>
           </div>
           <p style={{ whiteSpace: "pre-wrap" }}>{c.body}</p>
         </div>

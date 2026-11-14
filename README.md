@@ -2,7 +2,6 @@
 
 Open-source forum where anything legal can be discussed. Illegal content is banned, and responsibility for every post lies with the person who posts it.
 
-Yasalar çerçevesinde her şeyin konuşulabildiği açık kaynak forum. Suç oluşturan içerik yasak; paylaşılan içeriğin sorumluluğu paylaşana aittir.
 
 ## Features
 - Communities, posts, comments, up/down votes
@@ -30,10 +29,10 @@ npm run dev
 ## Not included yet (good first contributions)
 - Image/video upload with age + identity verification and consent records
 - Search, user profiles, nested comments, notifications
-- English/other-language UI (currently Turkish), IP-based rate limiting
+- Multi-language UI (currently English only), IP-based rate limiting
 
 ## Legal note
-If you host an instance you are the operator and carry the legal obligations in your country (e.g. Turkey Law 5651, EU DSA, UK Online Safety Act, US Take It Down Act). This is not legal advice; see [docs/MODERATION.md](docs/MODERATION.md).
+If you host an instance you are the operator and carry the legal obligations in your country (e.g. EU DSA, UK Online Safety Act, US Take It Down Act, local internet laws). This is not legal advice; see [docs/MODERATION.md](docs/MODERATION.md).
 
 ## License
 MIT

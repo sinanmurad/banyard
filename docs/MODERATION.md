@@ -1,34 +1,38 @@
-# Moderasyon ve takedown süreci
+# Moderation and takedown process
 
-Banyard'yı kendi sunucunuzda çalıştıran kişi **işletmecidir** ve yasal yükümlülükler ona aittir.
+Whoever runs a Banyard instance is the **operator** and carries the legal obligations.
 
-## Rapor kuyruğu
-Yöneticiler `/admin` sayfasından raporları görür; "İçeriği kaldır" veya "Reddet" butonları vardır.
-Yönetici yapmak için: `update profiles set is_admin = true where username = 'kullanici';`
+## Report queue
+Reports land in the `reports` table (readable only by admins and the service role).
+Admins see them on the `/admin` page, where "Remove content" and "Dismiss" buttons are available.
+To make someone an admin:
 
-Aşağıdaki SQL alternatiftir:
-Bildirimler `reports` tablosuna düşer (yalnızca service role / Supabase dashboard okuyabilir).
+```sql
+update profiles set is_admin = true where username = 'your_username';
+```
+
+The same can be done in SQL:
 
 ```sql
 select * from reports where status = 'open' order by created_at;
 ```
 
-## Öncelik
-| Kategori | Süre |
+## Priority
+| Category | Deadline |
 |---|---|
-| `csam` | Hemen kaldır, yetkili makama bildir |
-| `non_consensual_intimate` | En geç 48 saat (ABD Take It Down Act) |
-| `violence`, `drugs_weapons`, `illegal` | Mümkün olan en kısa sürede |
+| `csam` | Remove immediately, report to the competent authority |
+| `non_consensual_intimate` | Within 48 hours at most (US Take It Down Act) |
+| `violence`, `drugs_weapons`, `illegal` | As soon as possible |
 
-## İçerik kaldırma
+## Removing content
 ```sql
 update posts set removed = true where id = '<id>';
 update comments set removed = true where id = '<id>';
-update reports set status = 'actioned' where id = '<rapor-id>';
+update reports set status = 'actioned' where id = '<report-id>';
 ```
 
-## Yapılması gerekenler (kendi sitenizi açıyorsanız)
-- `NEXT_PUBLIC_LEGAL_EMAIL` değerini gerçek bir adrese ayarlayın.
-- Bulunduğunuz ülkedeki yasal yükümlülükleri (ör. Türkiye 5651, AB DSA, İngiltere Online Safety Act, ABD Take It Down Act) bir avukata danıştırın.
-- Görsel/video yükleme eklemeden önce yaş doğrulama, yükleyen kimlik doğrulama ve rıza belgesi altyapısını kurun. Ödeme kuruluşları (Visa/Mastercard) bunu şart koşar.
-- Bu proje hukuki danışmanlık değildir.
+## Before you run a public instance
+- Set `NEXT_PUBLIC_LEGAL_EMAIL` to a real address.
+- Get legal advice on the obligations in your country and your users' countries (e.g. EU DSA, UK Online Safety Act, US Take It Down Act, local internet laws). Consider operating through a legal entity in a suitable jurisdiction.
+- Before adding image/video upload, build age verification, uploader identity verification and consent records. Card networks (Visa/Mastercard) require this for adult content.
+- This project is not legal advice.

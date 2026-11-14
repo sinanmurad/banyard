@@ -9,7 +9,7 @@ const fail = (path: string, msg: string): never =>
   redirect(`${path}${path.includes("?") ? "&" : "?"}error=${encodeURIComponent(msg)}`);
 
 export async function signUp(f: FormData) {
-  if (f.get("accept") !== "on") fail("/login", "Kuralları ve sorumluluk beyanını kabul etmelisiniz.");
+  if (f.get("accept") !== "on") fail("/login", "You must accept the rules and the responsibility statement.");
   const supabase = await db();
   const { error } = await supabase.auth.signUp({
     email: s(f, "email"),
@@ -54,7 +54,7 @@ export async function createPost(f: FormData) {
   const slug = s(f, "slug");
   const supabase = await db();
   const { data: c } = await supabase.from("communities").select("id").eq("slug", slug).single();
-  if (!c) fail("/", "Topluluk bulunamadı.");
+  if (!c) fail("/", "Community not found.");
   const { data, error } = await supabase
     .from("posts")
     .insert({
@@ -108,7 +108,7 @@ export async function submitReport(f: FormData) {
   const supabase = await db();
   const postId = s(f, "post_id") || null;
   const commentId = s(f, "comment_id") || null;
-  if (!postId && !commentId) fail("/report", "Rapor için gönderi veya yorum kimliği gerekli.");
+  if (!postId && !commentId) fail("/report", "A post ID or comment ID is required to file a report.");
   const { error } = await supabase.from("reports").insert({
     post_id: postId,
     comment_id: commentId,
@@ -137,7 +137,7 @@ async function requireAdmin() {
   return supabase;
 }
 
-// Yönetici: bildirilen içeriği kaldırır ve raporu "işlem yapıldı" yapar.
+// Admin: removes the reported content and marks the report as actioned.
 export async function removeReported(f: FormData) {
   const supabase = await requireAdmin();
   const postId = s(f, "post_id");

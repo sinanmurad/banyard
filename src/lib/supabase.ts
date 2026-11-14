@@ -15,7 +15,7 @@ export async function db() {
           try {
             list.forEach(({ name, value, options }) => store.set(name, value, options));
           } catch {
-            // Server Component içinden çağrıldığında yok sayılır; middleware yeniler.
+            // Ignored when called from a Server Component; middleware refreshes the session.
           }
         },
       },

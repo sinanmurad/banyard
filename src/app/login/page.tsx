@@ -7,27 +7,27 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
     <>
       {error && <p className="err">{error}</p>}
       <div className="card">
-        <h3>Giriş</h3>
+        <h3>Log in</h3>
         <form action={signIn} className="stack">
-          <input name="email" type="email" placeholder="E-posta" required />
-          <input name="password" type="password" placeholder="Şifre" required />
-          <button>Giriş yap</button>
+          <input name="email" type="email" placeholder="Email" required />
+          <input name="password" type="password" placeholder="Password" required />
+          <button>Log in</button>
         </form>
       </div>
       <div className="card">
-        <h3>Kayıt</h3>
+        <h3>Sign up</h3>
         <form action={signUp} className="stack">
-          <input name="username" placeholder="Kullanıcı adı (3-24, harf/rakam/_)" pattern="[a-zA-Z0-9_]{3,24}" required />
-          <input name="email" type="email" placeholder="E-posta" required />
-          <input name="password" type="password" placeholder="Şifre (min 8)" minLength={8} required />
+          <input name="username" placeholder="Username (3-24, letters/digits/_)" pattern="[a-zA-Z0-9_]{3,24}" required />
+          <input name="email" type="email" placeholder="Email" required />
+          <input name="password" type="password" placeholder="Password (min 8)" minLength={8} required />
           <label className="row">
             <input type="checkbox" name="accept" />
             <span>
-              <Link href="/rules">Kuralları</Link> okudum. 18 yaşından büyüğüm, paylaştığım her içeriğin
-              hukuki sorumluluğunun bana ait olduğunu kabul ediyorum.
+              I have read the <Link href="/rules">rules</Link>. I am 18 or older and I accept that I am
+              legally responsible for everything I post.
             </span>
           </label>
-          <button>Kayıt ol</button>
+          <button>Sign up</button>
         </form>
       </div>
     </>

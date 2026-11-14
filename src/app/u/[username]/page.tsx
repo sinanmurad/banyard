@@ -12,7 +12,7 @@ export default async function Profile({ params }: { params: Promise<{ username: 
   return (
     <>
       <h2>{u.username}</h2>
-      <p className="mute">Üyelik: {new Date(u.created_at).toLocaleDateString("tr-TR")}</p>
+      <p className="mute">Member since {new Date(u.created_at).toLocaleDateString("en-US")}</p>
       <FeedList rows={(data ?? []) as FeedRow[]} />
     </>
   );

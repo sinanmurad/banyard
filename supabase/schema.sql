@@ -1,4 +1,4 @@
--- Banyard: Supabase şeması. SQL Editor'e yapıştırıp çalıştırın.
+-- Banyard: Supabase schema. Paste into the SQL Editor and run.
 
 create table if not exists profiles (
   id uuid primary key references auth.users on delete cascade,
@@ -43,7 +43,7 @@ create table if not exists votes (
   primary key (post_id, user_id)
 );
 
--- Rapor / takedown talepleri. Herkes (giriş yapmadan da) rapor gönderebilir.
+-- Reports / takedown requests. Anyone (even logged out) can file a report.
 create table if not exists reports (
   id uuid primary key default gen_random_uuid(),
   post_id uuid references posts(id) on delete set null,
@@ -62,7 +62,7 @@ create view post_scores as
   from posts p left join votes v on v.post_id = p.id
   group by p.id;
 
--- Kayıtta profil otomatik oluşur (e-posta onayı açık olsa da çalışır).
+-- A profile is created automatically at sign-up (works with email confirmation on).
 create or replace function handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
@@ -102,15 +102,15 @@ create policy "votes upsert own" on votes for insert with check (auth.uid() = us
 create policy "votes update own" on votes for update using (auth.uid() = user_id);
 create policy "votes delete own" on votes for delete using (auth.uid() = user_id);
 
--- Raporlar: herkes gönderebilir, kimse okuyamaz (yalnızca service role / dashboard).
+-- Reports: anyone can insert; only admins / service role can read.
 create policy "reports insert anyone" on reports for insert with check (true);
 
--- Kaldırma: yöneticiler Supabase dashboard veya service role ile
+-- Removal: admins use the /admin page, or the Supabase dashboard / service role:
 --   update posts set removed = true where id = '...';
--- komutunu çalıştırır. Rapor kategorisi csam / non_consensual_intimate ise
--- 48 saat içinde kaldırılmalıdır (bkz. docs/MODERATION.md).
+--   (run the statement above). If the report category is csam / non_consensual_intimate,
+-- the content must be removed within 48 hours (see docs/MODERATION.md).
 
--- ===== v0.2: admin, hız sınırı, sıralama =====
+-- ===== v0.2: admin, rate limits, ranking =====
 
 alter table profiles add column if not exists is_admin boolean not null default false;
 
@@ -119,7 +119,7 @@ language sql security definer stable set search_path = public as $$
   select coalesce((select is_admin from profiles where id = auth.uid()), false)
 $$;
 
--- Yöneticiler kaldırılmış içeriği de görür, içerik ve rapor durumunu günceller.
+-- Admins can also see removed content and update content / report status.
 create policy "posts admin read" on posts for select using (is_admin());
 create policy "posts admin update" on posts for update using (is_admin());
 create policy "comments admin read" on comments for select using (is_admin());
@@ -127,12 +127,12 @@ create policy "comments admin update" on comments for update using (is_admin());
 create policy "reports admin read" on reports for select using (is_admin());
 create policy "reports admin update" on reports for update using (is_admin());
 
--- Hız sınırı: spam'i azaltır.
+-- Rate limits: reduce spam.
 create or replace function limit_posts() returns trigger language plpgsql as $$
 begin
   if (select count(*) from posts where author_id = new.author_id
         and created_at > now() - interval '1 minute') >= 3 then
-    raise exception 'Çok hızlı paylaşıyorsunuz, biraz bekleyin.';
+    raise exception 'You are posting too fast, please wait a moment.';
   end if;
   return new;
 end $$;
@@ -143,14 +143,14 @@ create or replace function limit_comments() returns trigger language plpgsql as 
 begin
   if (select count(*) from comments where author_id = new.author_id
         and created_at > now() - interval '1 minute') >= 10 then
-    raise exception 'Çok hızlı yorum yapıyorsunuz, biraz bekleyin.';
+    raise exception 'You are commenting too fast, please wait a moment.';
   end if;
   return new;
 end $$;
 create trigger comments_rate_limit before insert on comments
   for each row execute function limit_comments();
 
--- Akış görünümü: skor ve "hot" sıralaması.
+-- Feed view: score and "hot" ranking.
 create or replace view feed with (security_invoker = true) as
 select p.id, p.title, p.is_nsfw, p.created_at,
        c.slug as community_slug, pr.username,
@@ -162,5 +162,5 @@ join communities c on c.id = p.community_id
 join profiles pr on pr.id = p.author_id
 left join post_scores s on s.post_id = p.id;
 
--- İlk yöneticiyi atamak için (kendi kullanıcı adınızla):
+-- To make the first admin (use your own username):
 --   update profiles set is_admin = true where username = 'kullanici_adi';

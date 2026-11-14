@@ -26,18 +26,18 @@ export default async function Community({
       <p className="mute">{c.description}</p>
       {user ? (
         <details className="card">
-          <summary>Yeni gönderi</summary>
+          <summary>New post</summary>
           {error && <p className="err">{error}</p>}
           <form action={createPost} className="stack">
             <input type="hidden" name="slug" value={slug} />
-            <input name="title" placeholder="Başlık" required maxLength={300} />
-            <textarea name="body" placeholder="Metin (şimdilik yalnızca metin/bağlantı)" />
-            <label className="row"><input type="checkbox" name="nsfw" /> 18+ içerik (yetişkinlere özel)</label>
-            <button>Paylaş</button>
+            <input name="title" placeholder="Title" required maxLength={300} />
+            <textarea name="body" placeholder="Text (text and links only for now)" />
+            <label className="row"><input type="checkbox" name="nsfw" /> 18+ content (adults only)</label>
+            <button>Post</button>
           </form>
         </details>
       ) : (
-        <p className="mute"><Link href="/login">Giriş yap</Link> ve paylaş.</p>
+        <p className="mute"><Link href="/login">Log in</Link> to post.</p>
       )}
       <SortTabs base={`/c/${slug}`} sort={sort} />
       <FeedList rows={(posts ?? []) as FeedRow[]} />

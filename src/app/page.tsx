@@ -15,15 +15,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
   return (
     <>
       <div className="card">
-        <b>Banyard</b> — yasalar çerçevesinde her şey konuşulabilir. Yasadışı içerik yasak,
-        içeriğin sorumluluğu paylaşana aittir. <Link href="/rules">Kurallar</Link>
+        <b>Banyard</b> — anything legal can be discussed here. Illegal content is banned, and
+        you are responsible for what you post. <Link href="/rules">Rules</Link>
       </div>
       <p className="mute">
-        Topluluklar:{" "}
+        Communities:{" "}
         {(comms ?? []).map((c) => (
           <Link key={c.slug} href={`/c/${c.slug}`} style={{ marginRight: 10 }}>c/{c.slug}</Link>
         ))}
-        {(comms ?? []).length === 0 && "henüz yok, ilkini sen aç"}
+        {(comms ?? []).length === 0 && "none yet — create the first one"}
       </p>
       <SortTabs base="/" sort={sort} />
       <FeedList rows={(data ?? []) as FeedRow[]} />
