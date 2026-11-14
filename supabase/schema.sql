@@ -167,3 +167,75 @@ left join post_scores s on s.post_id = p.id;
 
 -- To make the first admin (use your own username):
 --   update profiles set is_admin = true where username = 'kullanici_adi';
+
+-- ===== v0.3: profiles, settings, memberships, replies =====
+
+alter table profiles
+  add column if not exists display_name text check (char_length(display_name) <= 40),
+  add column if not exists bio text not null default '' check (char_length(bio) <= 300),
+  add column if not exists show_nsfw boolean not null default false,
+  add column if not exists default_sort text not null default 'hot' check (default_sort in ('hot','new','top'));
+
+-- Users may only edit their own harmless profile columns (never is_admin).
+drop policy if exists "profiles insert own" on profiles;
+revoke insert, update on profiles from anon, authenticated;
+grant update (display_name, bio, show_nsfw, default_sort) on profiles to authenticated;
+create policy "profiles update own" on profiles for update
+  using (auth.uid() = id) with check (auth.uid() = id);
+
+create table if not exists memberships (
+  user_id uuid not null references profiles(id) on delete cascade,
+  community_id uuid not null references communities(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, community_id)
+);
+alter table memberships enable row level security;
+create policy "memberships read own" on memberships for select using (auth.uid() = user_id);
+create policy "memberships insert own" on memberships for insert with check (auth.uid() = user_id);
+create policy "memberships delete own" on memberships for delete using (auth.uid() = user_id);
+
+alter table comments add column if not exists parent_id uuid references comments(id) on delete cascade;
+
+alter table posts add column if not exists edited_at timestamptz;
+create policy "posts update own" on posts for update using (auth.uid() = author_id) with check (auth.uid() = author_id);
+revoke update on posts from anon, authenticated;
+grant update (title, body, is_nsfw, edited_at) on posts to authenticated;
+revoke update on comments from anon, authenticated;
+
+-- Only admins may change the "removed" flag (also grants the column for admin updates).
+grant update (removed) on posts to authenticated;
+grant update (removed) on comments to authenticated;
+create or replace function guard_removed() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if new.removed is distinct from old.removed and not is_admin() then
+    raise exception 'Only admins can remove or restore content.';
+  end if;
+  return new;
+end $$;
+create trigger posts_guard_removed before update on posts
+  for each row execute function guard_removed();
+create trigger comments_guard_removed before update on comments
+  for each row execute function guard_removed();
+
+-- Self-service account deletion (cascades to profile, posts, comments, votes).
+create or replace function delete_my_account() returns void
+language plpgsql security definer set search_path = public, auth as $$
+begin
+  if auth.uid() is null then raise exception 'Not signed in'; end if;
+  delete from auth.users where id = auth.uid();
+end $$;
+revoke execute on function delete_my_account() from public, anon;
+grant execute on function delete_my_account() to authenticated;
+
+create or replace view feed with (security_invoker = true) as
+select p.id, p.title, p.is_nsfw, p.created_at,
+       c.slug as community_slug, pr.username,
+       coalesce(s.score, 0) as score,
+       (coalesce(s.score, 0) + 1) /
+         power(extract(epoch from now() - p.created_at) / 3600 + 2, 1.5) as hot,
+       pr.display_name
+from posts p
+join communities c on c.id = p.community_id
+join profiles pr on pr.id = p.author_id
+left join post_scores s on s.post_id = p.id;

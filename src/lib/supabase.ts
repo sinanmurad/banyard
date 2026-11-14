@@ -28,3 +28,21 @@ export async function currentUser() {
   const { data } = await supabase.auth.getUser();
   return data.user;
 }
+
+export type Me = {
+  username: string; display_name: string | null; bio: string;
+  show_nsfw: boolean; default_sort: string; is_admin: boolean;
+};
+
+// Signed-in user plus their profile (null when logged out).
+export async function currentProfile() {
+  const supabase = await db();
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) return null;
+  const { data: p } = await supabase
+    .from("profiles")
+    .select("username,display_name,bio,show_nsfw,default_sort,is_admin")
+    .eq("id", data.user.id)
+    .single();
+  return p ? { user: data.user, profile: p as Me } : null;
+}

@@ -9,7 +9,10 @@ Open-source forum where anything legal can be discussed. Illegal content is bann
 - `18+` flag: hidden by default, text/link only (no media upload yet)
 - Public report / takedown form (no login), 48-hour process for CSAM and non-consensual intimate imagery
 - Admin report queue at `/admin` (urgent categories first), one-click remove/dismiss
-- Hot / new / top sorting, user profiles, delete your own posts
+- Hot / new / top sorting, user profiles with display name and bio
+- Settings page: profile, default sorting, 18+ preference, change password, delete account
+- Join/leave communities, "My communities" feed, one-page post creation (`/submit`)
+- Threaded replies, edit and delete your own posts
 - Rate limits on posts and comments (SQL triggers)
 - Moderation details: [docs/MODERATION.md](docs/MODERATION.md)
 

@@ -2,14 +2,14 @@ import Link from "next/link";
 
 export type FeedRow = {
   id: string; title: string; is_nsfw: boolean; created_at: string;
-  community_slug: string; username: string; score: number;
+  community_slug: string; username: string; display_name?: string | null; score: number;
 };
 
-export function SortTabs({ base, sort }: { base: string; sort: string }) {
+export function SortTabs({ base, sort, extra = "" }: { base: string; sort: string; extra?: string }) {
   return (
     <p className="row">
       {["hot", "new", "top"].map((k) => (
-        <Link key={k} href={`${base}?sort=${k}`} style={{ fontWeight: sort === k ? 700 : 400 }}>
+        <Link key={k} href={`${base}?${extra}sort=${k}`} style={{ fontWeight: sort === k ? 700 : 400 }}>
           {k === "hot" ? "Hot" : k === "new" ? "New" : "Top"}
         </Link>
       ))}
@@ -26,7 +26,7 @@ export function FeedList({ rows }: { rows: FeedRow[] }) {
           <Link href={`/p/${p.id}`}>{p.title}</Link>
           <div className="mute">
             {p.score} points · <Link href={`/c/${p.community_slug}`}>c/{p.community_slug}</Link> ·{" "}
-            <Link href={`/u/${p.username}`}>{p.username}</Link> ·{" "}
+            <Link href={`/u/${p.username}`}>{p.display_name || p.username}</Link> ·{" "}
             {new Date(p.created_at).toLocaleString("en-US")}
           </div>
         </div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db, currentUser } from "@/lib/supabase";
-import { createPost } from "../../actions";
+import { createPost, toggleMembership } from "../../actions";
 import { FeedList, SortTabs, orderFor, type FeedRow } from "@/components/FeedList";
 
 export default async function Community({
@@ -19,11 +19,24 @@ export default async function Community({
     .order(orderFor(sort), { ascending: false })
     .limit(50);
   const user = await currentUser();
+  let joined = false;
+  if (user) {
+    const { data: m } = await supabase
+      .from("memberships").select("user_id").eq("user_id", user.id).eq("community_id", c.id).maybeSingle();
+    joined = !!m;
+  }
 
   return (
     <>
       <h2>c/{slug} — {c.title}</h2>
       <p className="mute">{c.description}</p>
+      {user && (
+        <form action={toggleMembership}>
+          <input type="hidden" name="slug" value={slug} />
+          <input type="hidden" name="joined" value={joined ? "1" : "0"} />
+          <button className={joined ? "ghost" : ""}>{joined ? "Joined ✓ (click to leave)" : "Join community"}</button>
+        </form>
+      )}
       {user ? (
         <details className="card">
           <summary>New post</summary>

@@ -87,7 +87,7 @@ export async function createComment(f: FormData) {
   const supabase = await db();
   const { error } = await supabase
     .from("comments")
-    .insert({ post_id: postId, author_id: user.id, body: s(f, "body") });
+    .insert({ post_id: postId, author_id: user.id, body: s(f, "body"), parent_id: s(f, "parent_id") || null });
   if (error) fail(`/p/${postId}`, error.message);
   revalidatePath(`/p/${postId}`);
   redirect(`/p/${postId}`);
@@ -164,4 +164,70 @@ export async function dismissReport(f: FormData) {
   await supabase.from("reports").update({ status: "dismissed" }).eq("id", s(f, "report_id"));
   revalidatePath("/admin");
   redirect("/admin");
+}
+
+export async function updateProfile(f: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  const supabase = await db();
+  const sort = s(f, "default_sort");
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      display_name: s(f, "display_name") || null,
+      bio: s(f, "bio"),
+      show_nsfw: f.get("show_nsfw") === "on",
+      default_sort: ["hot", "new", "top"].includes(sort) ? sort : "hot",
+    })
+    .eq("id", user.id);
+  if (error) fail("/settings", error.message);
+  redirect("/settings?saved=1");
+}
+
+export async function updatePassword(f: FormData) {
+  const pw = s(f, "password");
+  if (pw.length < 8) fail("/settings", "Password must be at least 8 characters.");
+  const supabase = await db();
+  const { error } = await supabase.auth.updateUser({ password: pw });
+  if (error) fail("/settings", error.message);
+  redirect("/settings?saved=1");
+}
+
+export async function deleteAccount(f: FormData) {
+  if (s(f, "confirm") !== "DELETE") fail("/settings", 'Type DELETE to confirm.');
+  const supabase = await db();
+  const { error } = await supabase.rpc("delete_my_account");
+  if (error) fail("/settings", error.message);
+  await supabase.auth.signOut();
+  redirect("/");
+}
+
+export async function toggleMembership(f: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  const supabase = await db();
+  const slug = s(f, "slug");
+  const { data: c } = await supabase.from("communities").select("id").eq("slug", slug).single();
+  if (!c) fail("/", "Community not found.");
+  if (f.get("joined") === "1") {
+    await supabase.from("memberships").delete().eq("user_id", user.id).eq("community_id", c!.id);
+  } else {
+    await supabase.from("memberships").insert({ user_id: user.id, community_id: c!.id });
+  }
+  revalidatePath(`/c/${slug}`);
+  redirect(`/c/${slug}`);
+}
+
+export async function editPost(f: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  const id = s(f, "post_id");
+  const supabase = await db();
+  const { error } = await supabase
+    .from("posts")
+    .update({ title: s(f, "title"), body: s(f, "body"), edited_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("author_id", user.id);
+  if (error) fail(`/p/${id}`, error.message);
+  redirect(`/p/${id}`);
 }
