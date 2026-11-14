@@ -1,4 +1,4 @@
--- Banyard: Supabase schema. Paste into the SQL Editor and run.
+-- Banyard: Supabase schema. Paste into the SQL Editor and run (or apply as a migration).
 
 create table if not exists profiles (
   id uuid primary key references auth.users on delete cascade,
@@ -57,7 +57,7 @@ create table if not exists reports (
   check (post_id is not null or comment_id is not null)
 );
 
-create view post_scores as
+create view post_scores with (security_invoker = true) as
   select p.id as post_id, coalesce(sum(v.value), 0)::int as score
   from posts p left join votes v on v.post_id = p.id
   group by p.id;
@@ -105,10 +105,10 @@ create policy "votes delete own" on votes for delete using (auth.uid() = user_id
 -- Reports: anyone can insert; only admins / service role can read.
 create policy "reports insert anyone" on reports for insert with check (true);
 
--- Removal: admins use the /admin page, or the Supabase dashboard / service role:
+-- Removal: admins use the /admin page, or SQL as the Supabase dashboard / service role:
 --   update posts set removed = true where id = '...';
---   (run the statement above). If the report category is csam / non_consensual_intimate,
--- the content must be removed within 48 hours (see docs/MODERATION.md).
+-- Reports in the csam / non_consensual_intimate categories must be actioned
+-- within 48 hours (see docs/MODERATION.md).
 
 -- ===== v0.2: admin, rate limits, ranking =====
 
