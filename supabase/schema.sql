@@ -74,6 +74,9 @@ end $$;
 create trigger on_auth_user_created after insert on auth.users
   for each row execute function handle_new_user();
 
+-- Not meant to be called through the API; the trigger runs as the function owner.
+revoke execute on function handle_new_user() from public, anon, authenticated;
+
 -- RLS
 alter table profiles enable row level security;
 alter table communities enable row level security;
@@ -128,7 +131,7 @@ create policy "reports admin read" on reports for select using (is_admin());
 create policy "reports admin update" on reports for update using (is_admin());
 
 -- Rate limits: reduce spam.
-create or replace function limit_posts() returns trigger language plpgsql as $$
+create or replace function limit_posts() returns trigger language plpgsql set search_path = public as $$
 begin
   if (select count(*) from posts where author_id = new.author_id
         and created_at > now() - interval '1 minute') >= 3 then
@@ -139,7 +142,7 @@ end $$;
 create trigger posts_rate_limit before insert on posts
   for each row execute function limit_posts();
 
-create or replace function limit_comments() returns trigger language plpgsql as $$
+create or replace function limit_comments() returns trigger language plpgsql set search_path = public as $$
 begin
   if (select count(*) from comments where author_id = new.author_id
         and created_at > now() - interval '1 minute') >= 10 then
