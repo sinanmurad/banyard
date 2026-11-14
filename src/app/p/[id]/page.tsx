@@ -49,14 +49,14 @@ export default async function Post({
   const supabase = await db();
   const { data: p } = await supabase
     .from("posts")
-    .select("id,title,body,is_nsfw,removed,created_at,edited_at,author_id,communities(slug),profiles(username,display_name)")
+    .select("id,title,body,is_nsfw,removed,created_at,edited_at,author_id,communities(slug),profiles!author_id(username,display_name)")
     .eq("id", id)
     .single();
   if (!p) notFound();
   const { data: sc } = await supabase.from("post_scores").select("score").eq("post_id", id).single();
   const { data: cm } = await supabase
     .from("comments")
-    .select("id,body,created_at,parent_id,author_id,removed,profiles(username,display_name)")
+    .select("id,body,created_at,parent_id,author_id,removed,profiles!author_id(username,display_name)")
     .eq("post_id", id)
     .order("created_at");
   const me = await currentProfile();
