@@ -1,4 +1,4 @@
-# Agora
+# Banyard
 
 Open-source forum where anything legal can be discussed. Illegal content is banned, and responsibility for every post lies with the person who posts it.
 
@@ -16,7 +16,7 @@ Next.js 15 (App Router) · TypeScript · Supabase (Auth, Postgres, RLS)
 
 ## Quick start
 ```bash
-git clone <your-fork> agora && cd agora
+git clone <your-fork> banyard && cd banyard
 npm install
 cp .env.example .env.local        # fill in Supabase URL, anon key, legal e-mail
 # Run supabase/schema.sql in the Supabase SQL editor

@@ -19,7 +19,7 @@ export default async function Home() {
   return (
     <>
       <div className="card">
-        <b>Agora</b> — yasalar çerçevesinde her şey konuşulabilir. Yasadışı içerik yasak,
+        <b>Banyard</b> — yasalar çerçevesinde her şey konuşulabilir. Yasadışı içerik yasak,
         içeriğin sorumluluğu paylaşana aittir. <Link href="/rules">Kurallar</Link>
       </div>
       <p className="mute">

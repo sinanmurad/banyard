@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Kurallar ve sorumluluk — Agora" };
+export const metadata = { title: "Kurallar ve sorumluluk — Banyard" };
 
 export default function Rules() {
   const mail = process.env.NEXT_PUBLIC_LEGAL_EMAIL ?? "legal@example.com";
@@ -11,7 +11,7 @@ export default function Rules() {
       <div className="card">
         <h3>Temel ilke</h3>
         <p>
-          Agora'da yasalar çerçevesinde her konu konuşulabilir: sert görüşler, tartışmalı fikirler,
+          Banyard'da yasalar çerçevesinde her konu konuşulabilir: sert görüşler, tartışmalı fikirler,
           siyaset, eleştiri ve yetişkinlere yönelik (18+) metin içerik serbesttir. Yasaklar yalnızca
           suç oluşturan veya başkasına doğrudan zarar veren içerikle sınırlıdır.
         </p>
@@ -36,7 +36,7 @@ export default function Rules() {
         <h3>Sorumluluk beyanı</h3>
         <p>
           Paylaşılan her içeriğin <b>hukuki ve cezai sorumluluğu yalnızca içeriği paylaşan kullanıcıya
-          aittir</b>. Agora bir barındırma hizmetidir; içerikleri yayımlanmadan önce incelemez, içeriklerin
+          aittir</b>. Banyard bir barındırma hizmetidir; içerikleri yayımlanmadan önce incelemez, içeriklerin
           doğruluğunu, yasallığını veya uygunluğunu garanti etmez. Kullanıcı, kayıt olarak şunları kabul eder:
         </p>
         <ul>

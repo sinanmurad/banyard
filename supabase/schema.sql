@@ -1,4 +1,4 @@
--- Agora: Supabase şeması. SQL Editor'e yapıştırıp çalıştırın.
+-- Banyard: Supabase şeması. SQL Editor'e yapıştırıp çalıştırın.
 
 create table if not exists profiles (
   id uuid primary key references auth.users on delete cascade,

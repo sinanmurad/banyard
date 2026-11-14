@@ -5,7 +5,7 @@ import { currentUser } from "@/lib/supabase";
 import { signOut } from "./actions";
 
 export const metadata: Metadata = {
-  title: "Agora",
+  title: "Banyard",
   description: "Yasalar çerçevesinde her şeyin konuşulabildiği açık kaynak forum.",
 };
 
@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="tr">
       <body>
         <header>
-          <Link href="/" className="brand">Agora</Link>
+          <Link href="/" className="brand">Banyard</Link>
           <Link href="/c/new">Topluluk aç</Link>
           <span className="spacer" />
           {user ? (

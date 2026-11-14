@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { submitReport } from "../actions";
 
-export const metadata = { title: "İçerik bildir — Agora" };
+export const metadata = { title: "İçerik bildir — Banyard" };
 
 export default async function Report({
   searchParams,

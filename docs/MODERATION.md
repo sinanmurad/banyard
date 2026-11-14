@@ -1,6 +1,6 @@
 # Moderasyon ve takedown süreci
 
-Agora'yı kendi sunucunuzda çalıştıran kişi **işletmecidir** ve yasal yükümlülükler ona aittir.
+Banyard'yı kendi sunucunuzda çalıştıran kişi **işletmecidir** ve yasal yükümlülükler ona aittir.
 
 ## Rapor kuyruğu
 Bildirimler `reports` tablosuna düşer (yalnızca service role / Supabase dashboard okuyabilir).
