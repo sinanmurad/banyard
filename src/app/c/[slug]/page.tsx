@@ -19,6 +19,9 @@ export default async function Community({
     .order(orderFor(sort), { ascending: false })
     .limit(50);
   const user = await currentUser();
+  const { data: blk } = user ? await supabase.from("blocks").select("blocked_id").eq("user_id", user.id) : { data: [] as { blocked_id: string }[] };
+  const blockedIds = new Set((blk ?? []).map((b) => b.blocked_id));
+  const visible = (posts ?? []).filter((r: { author_id?: string }) => !r.author_id || !blockedIds.has(r.author_id));
   let joined = false;
   if (user) {
     const { data: m } = await supabase
@@ -53,7 +56,7 @@ export default async function Community({
         <p className="mute"><Link href="/login">Log in</Link> to post.</p>
       )}
       <SortTabs base={`/c/${slug}`} sort={sort} />
-      <FeedList rows={(posts ?? []) as FeedRow[]} />
+      <FeedList rows={visible as FeedRow[]} />
     </>
   );
 }

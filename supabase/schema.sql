@@ -239,3 +239,156 @@ from posts p
 join communities c on c.id = p.community_id
 join profiles pr on pr.id = p.author_id
 left join post_scores s on s.post_id = p.id;
+
+-- ===== v0.4: transparency, appeals, saved, blocks, notifications, search =====
+-- v0.4: transparency, appeals, saved, blocks, notifications, search
+
+-- Public moderation log (no shadow removals: every removal has a reason).
+create table if not exists modlog (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('post','comment')),
+  target_id uuid not null,
+  target_author uuid references profiles(id) on delete set null,
+  post_id uuid,
+  title text not null default '',
+  reason text not null check (char_length(reason) between 3 and 500),
+  created_at timestamptz not null default now()
+);
+alter table modlog enable row level security;
+create policy "modlog public read" on modlog for select using (true);
+
+create table if not exists appeals (
+  id uuid primary key default gen_random_uuid(),
+  modlog_id uuid not null references modlog(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  message text not null check (char_length(message) between 3 and 2000),
+  status text not null default 'open' check (status in ('open','granted','denied')),
+  created_at timestamptz not null default now(),
+  unique (modlog_id, user_id)
+);
+alter table appeals enable row level security;
+create policy "appeals own insert" on appeals for insert to authenticated
+  with check (user_id = auth.uid());
+create policy "appeals own read" on appeals for select to authenticated
+  using (user_id = auth.uid() or is_admin());
+
+-- Authors can still see their own removed items (so they know what happened).
+create policy "posts author sees removed" on posts for select to authenticated
+  using (author_id = auth.uid());
+create policy "comments author sees removed" on comments for select to authenticated
+  using (author_id = auth.uid());
+
+create or replace function remove_content(p_kind text, p_id uuid, p_reason text)
+returns void language plpgsql security definer set search_path = public as $$
+declare a uuid; t text := ''; pid uuid;
+begin
+  if not is_admin() then raise exception 'admin only'; end if;
+  if p_kind = 'post' then
+    update posts set removed = true where id = p_id returning author_id, title, id into a, t, pid;
+  else
+    update comments set removed = true where id = p_id returning author_id, left(body, 80), post_id into a, t, pid;
+  end if;
+  insert into modlog (kind, target_id, target_author, post_id, title, reason)
+  values (p_kind, p_id, a, pid, coalesce(t, ''), p_reason);
+end $$;
+revoke execute on function remove_content(text, uuid, text) from public, anon;
+grant execute on function remove_content(text, uuid, text) to authenticated;
+
+create or replace function resolve_appeal(p_id uuid, p_grant boolean)
+returns void language plpgsql security definer set search_path = public as $$
+declare m modlog;
+begin
+  if not is_admin() then raise exception 'admin only'; end if;
+  update appeals set status = case when p_grant then 'granted' else 'denied' end
+    where id = p_id;
+  if p_grant then
+    select ml.* into m from modlog ml join appeals ap on ap.modlog_id = ml.id where ap.id = p_id;
+    if m.kind = 'post' then update posts set removed = false where id = m.target_id;
+    else update comments set removed = false where id = m.target_id; end if;
+  end if;
+end $$;
+revoke execute on function resolve_appeal(uuid, boolean) from public, anon;
+grant execute on function resolve_appeal(uuid, boolean) to authenticated;
+
+-- Saved posts (unlimited).
+create table if not exists saved (
+  user_id uuid not null references profiles(id) on delete cascade,
+  post_id uuid not null references posts(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, post_id)
+);
+alter table saved enable row level security;
+create policy "saved own" on saved for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Block users.
+create table if not exists blocks (
+  user_id uuid not null references profiles(id) on delete cascade,
+  blocked_id uuid not null references profiles(id) on delete cascade,
+  primary key (user_id, blocked_id),
+  check (user_id <> blocked_id)
+);
+alter table blocks enable row level security;
+create policy "blocks own" on blocks for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- In-app notifications only (no email spam).
+create table if not exists notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  post_id uuid not null references posts(id) on delete cascade,
+  from_user uuid references profiles(id) on delete set null,
+  read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+alter table notifications enable row level security;
+create policy "notif own read" on notifications for select to authenticated using (user_id = auth.uid());
+create policy "notif own update" on notifications for update to authenticated using (user_id = auth.uid());
+revoke update on notifications from authenticated;
+grant update (read) on notifications to authenticated;
+
+create or replace function notify_reply() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare target uuid;
+begin
+  if new.parent_id is not null then
+    select author_id into target from comments where id = new.parent_id;
+  else
+    select author_id into target from posts where id = new.post_id;
+  end if;
+  if target is not null and target <> new.author_id
+     and not exists (select 1 from blocks where user_id = target and blocked_id = new.author_id) then
+    insert into notifications (user_id, post_id, from_user) values (target, new.post_id, new.author_id);
+  end if;
+  return new;
+end $$;
+revoke execute on function notify_reply() from public, anon, authenticated;
+create trigger comments_notify after insert on comments
+  for each row execute function notify_reply();
+
+-- Full-text search (RLS applies: security invoker).
+create index if not exists posts_fts on posts using gin (to_tsvector('english', title || ' ' || body));
+create index if not exists comments_fts on comments using gin (to_tsvector('english', body));
+create or replace function search_posts(q text)
+returns table (id uuid, title text, snippet text, created_at timestamptz)
+language sql stable security invoker set search_path = public as $$
+  select p.id, p.title, left(p.body, 200), p.created_at from posts p
+  where not p.removed and to_tsvector('english', p.title || ' ' || p.body) @@ websearch_to_tsquery('english', q)
+  union
+  select c.post_id, 'Comment', left(c.body, 200), c.created_at from comments c
+  where not c.removed and to_tsvector('english', c.body) @@ websearch_to_tsquery('english', q)
+  order by created_at desc limit 50
+$$;
+
+create or replace view feed with (security_invoker = true) as
+select p.id, p.title, p.is_nsfw, p.created_at,
+       c.slug as community_slug, pr.username,
+       coalesce(s.score, 0) as score,
+       (coalesce(s.score, 0) + 1) /
+         power(extract(epoch from now() - p.created_at) / 3600 + 2, 1.5) as hot,
+       pr.display_name, p.author_id
+from posts p
+join communities c on c.id = p.community_id
+join profiles pr on pr.id = p.author_id
+left join post_scores s on s.post_id = p.id
+where not p.removed;

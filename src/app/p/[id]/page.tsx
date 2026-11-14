@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db, currentProfile } from "@/lib/supabase";
-import { createComment, vote, deletePost, editPost } from "../../actions";
+import { createComment, vote, deletePost, editPost, toggleSave, toggleBlock, submitAppeal } from "../../actions";
 
 type Comment = {
-  id: string; body: string; created_at: string; parent_id: string | null;
+  id: string; body: string; created_at: string; parent_id: string | null; author_id: string; removed: boolean;
   profiles: { username: string; display_name: string | null } | null;
 };
 
@@ -22,7 +22,7 @@ function Thread({
             {" · "}{new Date(c.created_at).toLocaleString("en-US")}
             {" · "}<Link href={`/report?comment_id=${c.id}`}>Report</Link>
           </div>
-          <p style={{ whiteSpace: "pre-wrap" }}>{c.body}</p>
+          <p style={{ whiteSpace: "pre-wrap" }}>{c.removed ? "[removed by moderators — see the public mod log]" : c.body}</p>
           {canReply && (
             <details>
               <summary>Reply</summary>
@@ -49,14 +49,14 @@ export default async function Post({
   const supabase = await db();
   const { data: p } = await supabase
     .from("posts")
-    .select("id,title,body,is_nsfw,created_at,edited_at,author_id,communities(slug),profiles(username,display_name)")
+    .select("id,title,body,is_nsfw,removed,created_at,edited_at,author_id,communities(slug),profiles(username,display_name)")
     .eq("id", id)
     .single();
   if (!p) notFound();
   const { data: sc } = await supabase.from("post_scores").select("score").eq("post_id", id).single();
   const { data: cm } = await supabase
     .from("comments")
-    .select("id,body,created_at,parent_id,profiles(username,display_name)")
+    .select("id,body,created_at,parent_id,author_id,removed,profiles(username,display_name)")
     .eq("post_id", id)
     .order("created_at");
   const me = await currentProfile();
@@ -64,11 +64,36 @@ export default async function Post({
   const author = p.profiles as unknown as { username: string; display_name: string | null } | null;
   const isMine = me?.user.id === p.author_id;
 
+  const { data: blk } = me
+    ? await supabase.from("blocks").select("blocked_id").eq("user_id", me.user.id)
+    : { data: [] as { blocked_id: string }[] };
+  const blocked = new Set((blk ?? []).map((b) => b.blocked_id));
+  const comments = ((cm ?? []) as unknown as Comment[]).filter((c) => !blocked.has(c.author_id));
+  const { data: sv } = me
+    ? await supabase.from("saved").select("post_id").eq("post_id", id).eq("user_id", me.user.id).maybeSingle()
+    : { data: null };
+  const { data: ml } = p.removed
+    ? await supabase.from("modlog").select("id,reason").eq("target_id", id).order("created_at", { ascending: false }).limit(1).maybeSingle()
+    : { data: null };
+
   const body = <p style={{ whiteSpace: "pre-wrap" }}>{p.body}</p>;
   const showDirectly = !p.is_nsfw || me?.profile.show_nsfw;
 
   return (
     <>
+      {p.removed && (
+        <div className="card warn">
+          <b>This post was removed.</b> Reason: {ml?.reason ?? "see the public mod log"}
+          {isMine && ml && (
+            <form action={submitAppeal} className="stack">
+              <input type="hidden" name="modlog_id" value={ml.id} />
+              <input type="hidden" name="back" value={`/p/${id}`} />
+              <textarea name="message" placeholder="Why should this be restored?" required minLength={3} />
+              <button>Appeal</button>
+            </form>
+          )}
+        </div>
+      )}
       <div className="card">
         <div className="mute">
           <Link href={`/c/${comm?.slug}`}>c/{comm?.slug}</Link> ·{" "}
@@ -87,6 +112,12 @@ export default async function Post({
           <span style={{ flex: 1 }} />
           {isMine && (
             <form action={deletePost}><input type="hidden" name="post_id" value={id} /><button className="ghost">Delete</button></form>
+          )}
+          {me && (
+            <form action={toggleSave}><input type="hidden" name="post_id" value={id} /><button className="ghost">{sv ? "Unsave" : "Save"}</button></form>
+          )}
+          {me && !isMine && (
+            <form action={toggleBlock}><input type="hidden" name="user_id" value={p.author_id} /><button className="ghost">{blocked.has(p.author_id) ? "Unblock author" : "Block author"}</button></form>
           )}
           <Link href={`/report?post_id=${id}`} className="mute">Report</Link>
         </div>
@@ -114,7 +145,7 @@ export default async function Post({
         <p className="mute"><Link href="/login">Log in</Link> to comment.</p>
       )}
 
-      <Thread all={(cm ?? []) as unknown as Comment[]} parent={null} postId={id} canReply={!!me} depth={0} />
+      <Thread all={comments} parent={null} postId={id} canReply={!!me} depth={0} />
     </>
   );
 }

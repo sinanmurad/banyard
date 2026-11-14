@@ -150,13 +150,66 @@ async function requireAdmin() {
 // Admin: removes the reported content and marks the report as actioned.
 export async function removeReported(f: FormData) {
   const supabase = await requireAdmin();
+  const reason = s(f, "reason");
+  if (reason.length < 3) fail("/admin", "A removal reason is required (shown publicly in the mod log).");
   const postId = s(f, "post_id");
   const commentId = s(f, "comment_id");
-  if (postId) await supabase.from("posts").update({ removed: true }).eq("id", postId);
-  if (commentId) await supabase.from("comments").update({ removed: true }).eq("id", commentId);
+  if (postId) await supabase.rpc("remove_content", { p_kind: "post", p_id: postId, p_reason: reason });
+  if (commentId) await supabase.rpc("remove_content", { p_kind: "comment", p_id: commentId, p_reason: reason });
   await supabase.from("reports").update({ status: "actioned" }).eq("id", s(f, "report_id"));
   revalidatePath("/admin");
   redirect("/admin");
+}
+
+export async function submitAppeal(f: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  const supabase = await db();
+  const back = s(f, "back") || "/";
+  const { error } = await supabase.from("appeals").insert({
+    modlog_id: s(f, "modlog_id"), user_id: user.id, message: s(f, "message"),
+  });
+  if (error) fail(back, "Could not send appeal (already sent, or message too short).");
+  redirect(`${back}${back.includes("?") ? "&" : "?"}notice=${encodeURIComponent("Appeal sent. An admin will review it.")}`);
+}
+
+export async function resolveAppeal(f: FormData) {
+  const supabase = await requireAdmin();
+  await supabase.rpc("resolve_appeal", { p_id: s(f, "appeal_id"), p_grant: s(f, "grant") === "1" });
+  revalidatePath("/admin");
+  redirect("/admin");
+}
+
+export async function toggleSave(f: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  const supabase = await db();
+  const postId = s(f, "post_id");
+  const { data } = await supabase.from("saved").select("post_id").eq("post_id", postId).eq("user_id", user.id).maybeSingle();
+  if (data) await supabase.from("saved").delete().eq("post_id", postId).eq("user_id", user.id);
+  else await supabase.from("saved").insert({ post_id: postId, user_id: user.id });
+  revalidatePath(`/p/${postId}`);
+  revalidatePath("/saved");
+}
+
+export async function toggleBlock(f: FormData) {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  const supabase = await db();
+  const target = s(f, "user_id");
+  if (target === user.id) return;
+  const { data } = await supabase.from("blocks").select("blocked_id").eq("user_id", user.id).eq("blocked_id", target).maybeSingle();
+  if (data) await supabase.from("blocks").delete().eq("user_id", user.id).eq("blocked_id", target);
+  else await supabase.from("blocks").insert({ user_id: user.id, blocked_id: target });
+  revalidatePath("/", "layout");
+}
+
+export async function markNotificationsRead() {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  const supabase = await db();
+  await supabase.from("notifications").update({ read: true }).eq("user_id", user.id).eq("read", false);
+  revalidatePath("/", "layout");
 }
 
 export async function dismissReport(f: FormData) {

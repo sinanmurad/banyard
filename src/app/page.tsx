@@ -20,7 +20,10 @@ export default async function Home({
 
   let query = supabase.from("feed").select("*").order(orderFor(sort), { ascending: false }).limit(50);
   if (slugs) query = query.in("community_slug", slugs.length ? slugs : ["__none__"]);
-  const { data } = await query;
+  const { data: all } = await query;
+  const { data: blk } = me ? await supabase.from("blocks").select("blocked_id").eq("user_id", me.user.id) : { data: [] as { blocked_id: string }[] };
+  const blockedIds = new Set((blk ?? []).map((b) => b.blocked_id));
+  const data = (all ?? []).filter((r: { author_id?: string }) => !r.author_id || !blockedIds.has(r.author_id));
   const { data: comms } = await supabase.from("communities").select("slug").limit(30);
 
   return (
