@@ -6,9 +6,12 @@ import { NextResponse, type NextRequest } from "next/server";
 // Refreshes the session cookie on every request.
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return response; // env vars missing: do not crash every page
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    key,
     {
       cookies: {
         getAll: () => request.cookies.getAll(),
@@ -20,7 +23,7 @@ export async function middleware(request: NextRequest) {
       },
     }
   );
-  await supabase.auth.getUser();
+  try { await supabase.auth.getUser(); } catch { /* never block the page on auth refresh */ }
   return response;
 }
 
